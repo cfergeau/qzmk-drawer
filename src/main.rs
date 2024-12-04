@@ -19,7 +19,9 @@ fn main() {
     println!("keyboard: {}", keymap.keyboard);
     println!("keymap: {}", keymap.keymap);
     println!("layout: {}", keymap.layout);
-    println!("layers: {:?}", keymap.layers);
-
-
+    let mut i = 0;
+    for layer in keymap.layers {
+        println!("layer #{i}: {} elements: {:?}", layer.len(), layer);
+        i+=1;
+    }
 }
