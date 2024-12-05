@@ -9,7 +9,7 @@ struct Keymap {
     layers: Vec<Vec<String>>,
 }
 
-fn to_yaml(keymap: Keymap) -> Result<String,&'static str>{
+fn to_yaml(keymap: &Keymap) -> Result<String,&'static str>{
     let mut yaml = String::from("layout:");
     yaml.push(' ');
     // {qmk_keyboard: planck/rev7, layout_name: LAYOUT_ortho_4x12}
@@ -50,5 +50,5 @@ fn main() {
    if keymap.layout == "LAYOUT_planck_grid" {
         keymap.layout = "LAYOUT_ortho_4x12".to_string();
     }
-    to_yaml(keymap).expect("conversion to yaml failed");
+    to_yaml(&keymap).expect("conversion to yaml failed");
 }
