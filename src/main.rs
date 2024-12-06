@@ -3,6 +3,18 @@ use std::fs::File;
 use std::io::prelude::*;
 use serde::{Deserialize, Serialize};
 
+enum Key {
+    Press(u32),
+    Unicode(u32, Option<u32>),
+    LayerTap,
+    ModTap,
+}
+impl Key {
+    fn from_str(keyStr: &str) -> Option<Self> {
+        None
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 struct Keymap {
     keymap: String,
@@ -27,6 +39,17 @@ impl Keymap {
             yaml.push('\n');
             //println!("layer #{i}: {} elements: {:?}", layer.len(), layer);
             for keycode in layer {
+                // transform keycode
+                if !keycode.starts_with("KC_") {
+                    println!("not keypress: {keycode}");
+                }
+                // enum {
+                // UnicodeSingle,
+                // UnicodeCase,
+                // LayerTap,
+                // ModTap,
+                // }
+                // UG_*, UM(), UP(), LT()
                 yaml.push_str("  ");
                 yaml.push_str("- ");
                 yaml.push_str(keycode);
