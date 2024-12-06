@@ -36,15 +36,27 @@ impl Keymap {
         return Ok(yaml)
         //Err("unimplemented")
     }
+
+    fn from_file(filename: &str) -> Result<Self, &'static str> {
+        let data = match fs::read_to_string(filename) {
+            Ok(data) => data,
+            // most likely requires to specify a lifetime, which I haven't learnt yet
+            // Err(_) => Err(format!("Unable to read file {}", filename).as_str()),
+            Err(_) => return Err("Unable to read file"),
+        };
+
+        match serde_json::from_str::<Keymap>(&data) {
+            Ok(keymap) => Ok(keymap),
+            // Err(_) => Err(format!("Unable to parse file {}", filename)),
+            Err(_) => Err("Unable to parse file"),
+        }
+    }
 }
 
 fn main() {
     const FILENAME: &str = "data/planck-ergol.json";
 
-    let data =
-        fs::read_to_string(FILENAME).expect(format!("Unable to read file {}", FILENAME).as_str());
-
-    let mut keymap :Keymap = serde_json::from_str(&data).expect("JSON was not well-formatted");
+    let mut keymap = Keymap::from_file(FILENAME).expect("could not read keymap from file");
     //println!("keyboard: {}", keymap.keyboard);
     //println!("keymap: {}", keymap.keymap);
     //println!("layout: {}", keymap.layout);
