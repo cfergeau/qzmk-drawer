@@ -1,4 +1,6 @@
 use std::fs;
+use std::fs::File;
+use std::io::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -37,6 +39,19 @@ impl Keymap {
         //Err("unimplemented")
     }
 
+    fn to_file(&self, path: &str) -> Result<(), &'static str>{
+        let mut file = match File::create(&path) {
+            Err(_) => return Err("couldn't create file"),
+            Ok(f) => f,
+        };
+
+        let yaml = self.to_yaml()?;
+        match file.write_all(yaml.as_bytes()) {
+            Err(_) => Err("couldn't write to file"),
+            Ok(_) => Ok(()),
+        }
+    }
+
     fn from_file(filename: &str) -> Result<Self, &'static str> {
         let data = match fs::read_to_string(filename) {
             Ok(data) => data,
@@ -55,6 +70,7 @@ impl Keymap {
 
 fn main() {
     const FILENAME: &str = "data/planck-ergol.json";
+    const DEST_FILENAME: &str = "planck-ergol.yaml";
 
     let mut keymap = Keymap::from_file(FILENAME).expect("could not read keymap from file");
     //println!("keyboard: {}", keymap.keyboard);
@@ -63,5 +79,6 @@ fn main() {
    if keymap.layout == "LAYOUT_planck_grid" {
         keymap.layout = "LAYOUT_ortho_4x12".to_string();
     }
-    keymap.to_yaml().expect("conversion to yaml failed");
+    //keymap.to_yaml().expect("conversion to yaml failed");
+    keymap.to_file(DEST_FILENAME).expect("writing yaml to file failed");
 }
