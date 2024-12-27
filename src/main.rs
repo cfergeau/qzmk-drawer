@@ -114,6 +114,14 @@ impl Key {
         None
     }
 
+    fn layer_name(idx: usize) -> String {
+        if let Some(layer) = LAYERS.get(idx) {
+            layer.to_string()
+        } else {
+            format!("layer{idx}")
+        }
+    }
+
     // This method needs work:
     // - the parsed modifier needs to be validated against a list of known modifiers
     //   https://github.com/qmk/qmk_firmware/blob/master/docs/feature_advanced_keycodes.modifier
@@ -222,7 +230,7 @@ impl Keymap {
         let mut i = 0;
         for layer in &self.layers {
             yaml.push_str("  ");
-            yaml.push_str(format!("L{i}:").as_str());
+            yaml.push_str(&Key::layer_name(i));
             yaml.push('\n');
             //println!("layer #{i}: {} elements: {:?}", layer.len(), layer);
             for keycode in layer {
