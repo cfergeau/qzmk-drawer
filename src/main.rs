@@ -102,12 +102,12 @@ impl Key {
 
     fn parse_layer_name(layer_str: &str) -> Option<&str> {
         for layer in LAYERS {
-            if layer.to_ascii_lowercase() == layer_str.to_ascii_lowercase() {
+            if layer.eq_ignore_ascii_case(layer_str) {
                 return Some(layer);
             }
 
             let ulayer = format!("_{layer}");
-            if ulayer.to_ascii_lowercase() == layer_str.to_ascii_lowercase() {
+            if ulayer.eq_ignore_ascii_case(layer_str) {
                 return Some(layer);
             }
         }
