@@ -1,0 +1,157 @@
+use crate::keymap::Key;
+use lazy_static::lazy_static;
+use regex::Regex;
+
+static LAYERS: [&str; 8] = [
+    "Qwerty", "ErgoL", "Dvorak", "Lower", "Raise", "Adjust", "NaVim", "Accents",
+];
+
+fn parse_kc(key_str: &str) -> Option<Key> {
+    match key_str.strip_prefix("KC_") {
+        Some(key) => Some(Key::BasicKey(key.to_string())),
+        None => None,
+    }
+}
+
+fn parse_special(key_str: &str) -> Option<Key> {
+    lazy_static! {
+        static ref SPECIAL: Regex = Regex::new(r"^[A-Z]{2}(_[A-Z0-9]+)+$").unwrap();
+    }
+    if SPECIAL.is_match(key_str) {
+        return Some(Key::SpecialKey(key_str.to_string()));
+    }
+    None
+}
+
+fn parse_unicode(key_str: &str) -> Option<Key> {
+    // UM(xx)
+    // UP(lower, upper)
+    lazy_static! {
+        static ref UM: Regex = Regex::new(r"^UM\(([\w_]+)\)$").unwrap();
+        static ref UP: Regex = Regex::new(r"^UP\(([\w_]+), *([\w_]+)\)$").unwrap();
+    }
+    if let Some(um) = UM.captures(key_str) {
+        return Some(Key::Unicode(um[1].to_string(), None));
+    }
+    if let Some(up) = UP.captures(key_str) {
+        return Some(Key::Unicode(up[1].to_string(), Some(up[2].to_string())));
+    }
+    None
+}
+
+fn parse_layertap(key_str: &str) -> Option<Key> {
+    lazy_static! {
+        static ref LT: Regex = Regex::new(r"^LT\(([\w_]+), *([\w_]+)\)$").unwrap();
+    }
+    if let Some(lt) = LT.captures(key_str) {
+        if let Some(layer) = parse_layer_name(&lt[1]) {
+            return Some(Key::LayerTap {
+                layer: layer.to_string(),
+                key: lt[2].to_string(),
+            });
+        }
+    }
+    None
+}
+
+fn parse_modtap(key_str: &str) -> Option<Key> {
+    lazy_static! {
+        static ref MT: Regex = Regex::new(r"^([A-Z_]+)_T\(KC_([A-Z]+)\)$").unwrap();
+    }
+    if let Some(mt) = MT.captures(key_str) {
+        return Some(Key::ModTap {
+            modifier: mt[1].to_string(),
+            key: mt[2].to_string(),
+        });
+    }
+    None
+}
+
+fn parse_layer_change(key_str: &str) -> Option<Key> {
+    lazy_static! {
+        static ref LAYER_CHANGE: Regex = Regex::new(r"^(MO|PDF)\(([A-Z_]+)\)$").unwrap();
+    }
+    if let Some(lc) = LAYER_CHANGE.captures(key_str) {
+        if let Some(layer) = parse_layer_name(&lc[2]) {
+            return Some(Key::LayerChange {
+                _action: lc[1].to_string(),
+                layer: layer.to_string(),
+            });
+        }
+    }
+    None
+}
+
+fn parse_layer_name(layer_str: &str) -> Option<&str> {
+    for layer in LAYERS {
+        if layer.eq_ignore_ascii_case(layer_str) {
+            return Some(layer);
+        }
+
+        let ulayer = format!("_{layer}");
+        if ulayer.eq_ignore_ascii_case(layer_str) {
+            return Some(layer);
+        }
+    }
+    None
+}
+
+pub fn layer_name(idx: usize) -> String {
+    if let Some(layer) = LAYERS.get(idx) {
+        layer.to_string()
+    } else {
+        format!("layer{idx}")
+    }
+}
+
+// This method needs work:
+// - the parsed modifier needs to be validated against a list of known modifiers
+//   https://github.com/qmk/qmk_firmware/blob/master/docs/feature_advanced_keycodes.modifier
+//   otherwise it's going to be prone to false positives
+// - this does not handle nested modifiers such as `LCTL(LALT(KC_DEL))`
+fn parse_modkey(key_str: &str) -> Option<Key> {
+    lazy_static! {
+        static ref MK: Regex = Regex::new(r"^([A-Z_]+)\(KC_([A-Z]+)\)$").unwrap();
+    }
+    if let Some(mt) = MK.captures(key_str) {
+        return Some(Key::ModKey {
+            modifier: mt[1].to_string(),
+            key: mt[2].to_string(),
+        });
+    }
+    None
+}
+
+pub fn from_str(key_str: &str) -> Option<Key> {
+    if key_str == "KC_TRNS" {
+        return Some(Key::Trans);
+    }
+    if key_str == "KC_NO" {
+        return Some(Key::No);
+    }
+    if let Some(key) = parse_kc(key_str) {
+        return Some(key);
+    }
+    if let Some(key) = parse_special(key_str) {
+        return Some(key);
+    }
+    if let Some(key) = parse_unicode(key_str) {
+        return Some(key);
+    }
+    if let Some(key) = parse_layertap(key_str) {
+        return Some(key);
+    }
+    if let Some(key) = parse_modtap(key_str) {
+        return Some(key);
+    }
+    if let Some(key) = parse_layer_change(key_str) {
+        return Some(key);
+    }
+    // Keep this last as this is prone to false positives
+    if let Some(key) = parse_modkey(key_str) {
+        return Some(key);
+    }
+    println!("unknown key {key_str}");
+    Some(Key::Unknown(key_str.to_string()))
+    //None
+}
