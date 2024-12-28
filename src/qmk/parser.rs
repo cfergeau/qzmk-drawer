@@ -1,10 +1,7 @@
+use crate::keymap::layer;
 use crate::keymap::Key;
 use lazy_static::lazy_static;
 use regex::Regex;
-
-static LAYERS: [&str; 8] = [
-    "Qwerty", "ErgoL", "Dvorak", "Lower", "Raise", "Adjust", "NaVim", "Accents",
-];
 
 fn parse_kc(key_str: &str) -> Option<Key> {
     match key_str.strip_prefix("KC_") {
@@ -44,7 +41,7 @@ fn parse_layertap(key_str: &str) -> Option<Key> {
         static ref LT: Regex = Regex::new(r"^LT\(([\w_]+), *([\w_]+)\)$").unwrap();
     }
     if let Some(lt) = LT.captures(key_str) {
-        if let Some(layer) = parse_layer_name(&lt[1]) {
+        if let Some(layer) = layer::parse(&lt[1]) {
             return Some(Key::LayerTap {
                 layer: layer.to_string(),
                 key: lt[2].to_string(),
@@ -72,7 +69,7 @@ fn parse_layer_change(key_str: &str) -> Option<Key> {
         static ref LAYER_CHANGE: Regex = Regex::new(r"^(MO|PDF)\(([A-Z_]+)\)$").unwrap();
     }
     if let Some(lc) = LAYER_CHANGE.captures(key_str) {
-        if let Some(layer) = parse_layer_name(&lc[2]) {
+        if let Some(layer) = layer::parse(&lc[2]) {
             return Some(Key::LayerChange {
                 _action: lc[1].to_string(),
                 layer: layer.to_string(),
@@ -80,28 +77,6 @@ fn parse_layer_change(key_str: &str) -> Option<Key> {
         }
     }
     None
-}
-
-fn parse_layer_name(layer_str: &str) -> Option<&str> {
-    for layer in LAYERS {
-        if layer.eq_ignore_ascii_case(layer_str) {
-            return Some(layer);
-        }
-
-        let ulayer = format!("_{layer}");
-        if ulayer.eq_ignore_ascii_case(layer_str) {
-            return Some(layer);
-        }
-    }
-    None
-}
-
-pub fn layer_name(idx: usize) -> String {
-    if let Some(layer) = LAYERS.get(idx) {
-        layer.to_string()
-    } else {
-        format!("layer{idx}")
-    }
 }
 
 // This method needs work:

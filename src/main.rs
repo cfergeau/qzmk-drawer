@@ -39,7 +39,7 @@ impl Keymap {
         let mut i = 0;
         for layer in &self.layers {
             yaml.push_str("  ");
-            yaml.push_str(&qmk::parser::layer_name(i));
+            yaml.push_str(&keymap::layer::name(i));
             yaml.push('\n');
             //println!("layer #{i}: {} elements: {:?}", layer.len(), layer);
             for keycode in layer {
