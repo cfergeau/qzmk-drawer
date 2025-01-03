@@ -1,17 +1,15 @@
-use serde::{Deserialize, Serialize};
-use std::fs;
+use keymap::Key;
 use std::fs::File;
 use std::io::prelude::*;
 
 pub mod keymap;
 pub mod qmk;
 
-#[derive(Serialize, Deserialize)]
-struct Keymap {
+pub struct Keymap {
     keymap: String,
     keyboard: String,
     layout: String,
-    layers: Vec<Vec<String>>,
+    layers: Vec<Vec<Key>>,
 }
 
 // layout:
@@ -42,7 +40,7 @@ impl Keymap {
             yaml.push_str(&keymap::layer::name(i));
             yaml.push('\n');
             //println!("layer #{i}: {} elements: {:?}", layer.len(), layer);
-            for keycode in layer {
+            for key in layer {
                 // transform keycode
                 // enum {
                 // UnicodeSingle,
@@ -51,12 +49,10 @@ impl Keymap {
                 // ModTap,
                 // }
                 // UG_*, UM(), UP(), LT()
-                if let Some(key) = qmk::parser::from_str(keycode) {
-                    yaml.push_str("  ");
-                    yaml.push_str("- ");
-                    yaml.push_str(&key.to_yaml());
-                    yaml.push('\n');
-                }
+                yaml.push_str("  ");
+                yaml.push_str("- ");
+                yaml.push_str(&key.to_yaml());
+                yaml.push('\n');
             }
             i += 1;
         }
@@ -77,25 +73,10 @@ impl Keymap {
             Ok(_) => Ok(()),
         }
     }
-
-    fn from_file(filename: &str) -> Result<Self, &'static str> {
-        let data = match fs::read_to_string(filename) {
-            Ok(data) => data,
-            // most likely requires to specify a lifetime, which I haven't learnt yet
-            // Err(_) => Err(format!("Unable to read file {}", filename).as_str()),
-            Err(_) => return Err("Unable to read file"),
-        };
-
-        match serde_json::from_str::<Keymap>(&data) {
-            Ok(keymap) => Ok(keymap),
-            // Err(_) => Err(format!("Unable to parse file {}", filename)),
-            Err(_) => Err("Unable to parse file"),
-        }
-    }
 }
 
 pub struct Config {
-    src_json : String,
+    src_json: String,
     dest_yaml: String,
 }
 
@@ -109,11 +90,11 @@ impl Config {
 }
 
 pub fn run(config: Config) -> Result<(), &'static str> {
-    let keymap = Keymap::from_file(&config.src_json);
+    let keymap = qmk::parser::keymap_from_file(&config.src_json);
     if keymap.is_err() {
         return Err("could not read keymap from file");
     }
-    let mut keymap = Keymap::from_file(&config.src_json).unwrap();
+    let mut keymap = keymap.unwrap();
     //println!("keyboard: {}", keymap.keyboard);
     //println!("keymap: {}", keymap.keymap);
     //println!("layout: {}", keymap.layout);

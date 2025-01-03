@@ -1,7 +1,56 @@
 use crate::keymap::layer;
 use crate::keymap::Key;
+use crate::Keymap;
 use lazy_static::lazy_static;
 use regex::Regex;
+use serde::{Deserialize, Serialize};
+use std::fs;
+
+#[derive(Serialize, Deserialize)]
+struct RawKeymap {
+    keymap: String,
+    keyboard: String,
+    layout: String,
+    layers: Vec<Vec<String>>,
+}
+
+impl RawKeymap {
+    fn to_keymap(self) -> Result<Keymap, &'static str> {
+        let mut layers: Vec<Vec<Key>> = Vec::new();
+        for layer in &self.layers {
+            let mut keys: Vec<Key> = Vec::new();
+            for keycode in layer {
+                match from_str(keycode) {
+                    Some(key) => keys.push(key),
+                    None => return Err("failed to parse key"),
+                }
+            }
+            layers.push(keys);
+        }
+
+        Ok(Keymap {
+            keymap: self.keymap,
+            keyboard: self.keyboard,
+            layout: self.layout,
+            layers,
+        })
+    }
+}
+
+pub fn keymap_from_file(filename: &str) -> Result<Keymap, &'static str> {
+    let data = match fs::read_to_string(filename) {
+        Ok(data) => data,
+        // most likely requires to specify a lifetime, which I haven't learnt yet
+        // Err(_) => Err(format!("Unable to read file {}", filename).as_str()),
+        Err(_) => return Err("Unable to read file"),
+    };
+
+    match serde_json::from_str::<RawKeymap>(&data) {
+        Ok(raw_keymap) => raw_keymap.to_keymap(),
+        // Err(_) => Err(format!("Unable to parse file {}", filename)),
+        Err(_) => Err("Unable to parse file"),
+    }
+}
 
 fn parse_kc(key_str: &str) -> Option<Key> {
     match key_str.strip_prefix("KC_") {
