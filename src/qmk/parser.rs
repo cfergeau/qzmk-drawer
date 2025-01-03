@@ -1,13 +1,9 @@
 use crate::keymap::layer;
 use crate::keymap::Key;
-use crate::qmk::keycodes;
 use lazy_static::lazy_static;
 use regex::Regex;
 
 fn parse_kc(key_str: &str) -> Option<Key> {
-    if let Some(key) = keycodes::display_name(key_str) {
-        return Some(Key::BasicKey(key.to_string()));
-    }
     match key_str.strip_prefix("KC_") {
         Some(key) => Some(Key::BasicKey(key.to_string())),
         None => None,
