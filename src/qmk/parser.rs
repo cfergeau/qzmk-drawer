@@ -1,6 +1,6 @@
 use crate::keymap::layer;
 use crate::keymap::Key;
-use crate::Keymap;
+use crate::keymap::Keymap;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
