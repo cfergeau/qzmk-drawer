@@ -43,6 +43,8 @@ pub struct Keymap {
     pub keymap: String,
     pub keyboard: String,
     pub layout: String,
+    pub num_rows: usize,
+    pub num_columns: usize,
     pub layers: Vec<Vec<Key>>,
 }
 

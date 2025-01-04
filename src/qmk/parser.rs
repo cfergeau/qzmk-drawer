@@ -17,8 +17,16 @@ struct RawKeymap {
 impl RawKeymap {
     fn to_keymap(self) -> Result<Keymap, &'static str> {
         let mut layers: Vec<Vec<Key>> = Vec::new();
+        let mut num_columns: usize = 0;
+
         for layer in &self.layers {
             let mut keys: Vec<Key> = Vec::new();
+            if num_columns == 0 {
+                num_columns = layer.len();
+            }
+            if num_columns != layer.len() {
+                panic!("inconsistent row lengths ({num_columns} != {})", layer.len());
+            }
             for keycode in layer {
                 match from_str(keycode) {
                     Some(key) => keys.push(key),
@@ -31,6 +39,8 @@ impl RawKeymap {
         Ok(Keymap {
             keymap: self.keymap,
             keyboard: self.keyboard,
+            num_rows: layers.len(),
+            num_columns,
             layout: self.layout,
             layers,
         })
