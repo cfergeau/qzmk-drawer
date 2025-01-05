@@ -23,7 +23,7 @@ impl Key {
         match self {
             Key::BasicKey(key) => key.to_string(),
             Key::SpecialKey(key) => key.to_string(),
-            Key::No => "".to_string(),
+            Key::No => "null".to_string(),
             Key::Trans => "{t: ▽, type: trans}".to_string(),
             Key::Unicode(uc, None) => format!("UC({uc})"),
             Key::Unicode(lower, Some(upper)) => format!("UP({lower}, {upper})"),
