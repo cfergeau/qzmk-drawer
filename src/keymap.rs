@@ -74,7 +74,7 @@ impl Keymap {
         for layer in &self.layers {
             yaml.push_str("  ");
             yaml.push_str(&layer::name(i));
-            yaml.push('\n');
+            yaml.push_str(":\n");
             //println!("layer #{i}: {} elements: {:?}", layer.len(), layer);
             for key in layer {
                 // transform keycode
