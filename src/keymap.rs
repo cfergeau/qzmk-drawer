@@ -76,7 +76,7 @@ impl Keymap {
             yaml.push_str(&layer::name(i));
             yaml.push_str(":\n");
             //println!("layer #{i}: {} elements: {:?}", layer.len(), layer);
-            for key in layer {
+            for chunk in layer.chunks(self.num_columns) {
                 // transform keycode
                 // enum {
                 // UnicodeSingle,
@@ -86,9 +86,10 @@ impl Keymap {
                 // }
                 // UG_*, UM(), UP(), LT()
                 yaml.push_str("  ");
-                yaml.push_str("- ");
-                yaml.push_str(&key.to_yaml());
-                yaml.push('\n');
+                yaml.push_str("- [");
+                let yaml_keys: Vec<String> = chunk.iter().map(|key| key.to_yaml()).collect();
+                yaml.push_str(&yaml_keys.join(", "));
+                yaml.push_str("]\n");
             }
             i += 1;
         }
