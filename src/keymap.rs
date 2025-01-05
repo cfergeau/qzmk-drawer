@@ -25,7 +25,7 @@ impl Key {
             Key::SpecialKey(key) => key.to_string(),
             Key::No => "null".to_string(),
             Key::Trans => "{t: ▽, type: trans}".to_string(),
-            Key::Unicode(uc, None) => format!("UC({uc})"),
+            Key::Unicode(uc, None) => format!("UM({uc})"),
             Key::Unicode(lower, Some(upper)) => format!("UP({lower}, {upper})"),
             Key::LayerTap { layer, key } => format!("{{t: {key}, h: {layer}}}"),
             Key::ModTap { modifier, key } => format!("{{t: {key}, h: {modifier}}}"),
