@@ -17,15 +17,15 @@ struct RawKeymap {
 impl RawKeymap {
     fn to_keymap(self) -> Result<Keymap, &'static str> {
         let mut layers: Vec<Vec<Key>> = Vec::new();
-        let mut num_columns: usize = 0;
+        let mut num_keys: usize = 0;
 
         for layer in &self.layers {
             let mut keys: Vec<Key> = Vec::new();
-            if num_columns == 0 {
-                num_columns = layer.len();
+            if num_keys == 0 {
+                num_keys = layer.len();
             }
-            if num_columns != layer.len() {
-                panic!("inconsistent row lengths ({num_columns} != {})", layer.len());
+            if num_keys != layer.len() {
+                panic!("inconsistent layer lengths ({num_keys} != {})", layer.len());
             }
             for keycode in layer {
                 match from_str(keycode) {
@@ -35,12 +35,17 @@ impl RawKeymap {
             }
             layers.push(keys);
         }
+        // FIXME: should not be hardcoded
+        let num_rows = 4;
+        if num_keys % num_rows != 0 {
+            panic!("number of keys ({num_keys}) must be dividable by the number of rows ({num_rows})");
+        }
 
         Ok(Keymap {
             keymap: self.keymap,
             keyboard: self.keyboard,
-            num_rows: layers.len(),
-            num_columns,
+            num_rows,
+            num_columns: num_keys/num_rows,
             layout: self.layout,
             layers,
         })
