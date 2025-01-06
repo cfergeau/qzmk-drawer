@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::prelude::*;
+use crate::LayerNames;
 
 pub mod layer;
 
@@ -55,7 +56,7 @@ pub struct Keymap {
 //       columns: 12
 //       thumbs: MIT  # also try "2x2u" with one fewer key on the last row
 impl Keymap {
-    pub fn to_yaml(&self) -> Result<String, &'static str> {
+    pub fn to_yaml(&self, layer_names: &LayerNames) -> Result<String, &'static str> {
         let mut yaml = String::from("layout:");
         yaml.push(' ');
         // {qmk_keyboard: planck/rev7, layout_name: LAYOUT_ortho_4x12}
@@ -73,7 +74,7 @@ impl Keymap {
         let mut i = 0;
         for layer in &self.layers {
             yaml.push_str("  ");
-            yaml.push_str(&layer::name(i));
+            yaml.push_str(&layer_names.get(i));
             yaml.push_str(":\n");
             //println!("layer #{i}: {} elements: {:?}", layer.len(), layer);
             for chunk in layer.chunks(self.num_columns) {
@@ -98,13 +99,13 @@ impl Keymap {
         //Err("unimplemented")
     }
 
-    pub fn to_file(&self, path: &str) -> Result<(), &'static str> {
+    pub fn to_file(&self, path: &str, layer_names: &LayerNames) -> Result<(), &'static str> {
         let mut file = match File::create(&path) {
             Err(_) => return Err("couldn't create file"),
             Ok(f) => f,
         };
 
-        let yaml = self.to_yaml()?;
+        let yaml = self.to_yaml(layer_names)?;
         match file.write_all(yaml.as_bytes()) {
             Err(_) => Err("couldn't write to file"),
             Ok(_) => Ok(()),

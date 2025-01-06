@@ -1,4 +1,4 @@
-use crate::keymap::layer;
+use crate::keymap::layer::LayerNames;
 use crate::keymap::Key;
 use crate::keymap::Keymap;
 use lazy_static::lazy_static;
@@ -15,7 +15,7 @@ struct RawKeymap {
 }
 
 impl RawKeymap {
-    fn to_keymap(self) -> Result<Keymap, &'static str> {
+    fn to_keymap(self, num_rows: usize, layer_names: &LayerNames) -> Result<Keymap, &'static str> {
         let mut layers: Vec<Vec<Key>> = Vec::new();
         let mut num_keys: usize = 0;
 
@@ -28,15 +28,13 @@ impl RawKeymap {
                 panic!("inconsistent layer lengths ({num_keys} != {})", layer.len());
             }
             for keycode in layer {
-                match from_str(keycode) {
+                match from_str(keycode, layer_names) {
                     Some(key) => keys.push(key),
                     None => return Err("failed to parse key"),
                 }
             }
             layers.push(keys);
         }
-        // FIXME: should not be hardcoded
-        let num_rows = 4;
         if num_keys % num_rows != 0 {
             panic!("number of keys ({num_keys}) must be dividable by the number of rows ({num_rows})");
         }
@@ -52,7 +50,7 @@ impl RawKeymap {
     }
 }
 
-pub fn keymap_from_file(filename: &str) -> Result<Keymap, &'static str> {
+pub fn keymap_from_file(filename: &str, num_rows: usize, layer_names: &LayerNames) -> Result<Keymap, &'static str> {
     let data = match fs::read_to_string(filename) {
         Ok(data) => data,
         // most likely requires to specify a lifetime, which I haven't learnt yet
@@ -61,7 +59,7 @@ pub fn keymap_from_file(filename: &str) -> Result<Keymap, &'static str> {
     };
 
     match serde_json::from_str::<RawKeymap>(&data) {
-        Ok(raw_keymap) => raw_keymap.to_keymap(),
+        Ok(raw_keymap) => raw_keymap.to_keymap(num_rows, layer_names),
         // Err(_) => Err(format!("Unable to parse file {}", filename)),
         Err(_) => Err("Unable to parse file"),
     }
@@ -100,12 +98,12 @@ fn parse_unicode(key_str: &str) -> Option<Key> {
     None
 }
 
-fn parse_layertap(key_str: &str) -> Option<Key> {
+fn parse_layertap(key_str: &str, layer_names: &LayerNames) -> Option<Key> {
     lazy_static! {
         static ref LT: Regex = Regex::new(r"^LT\(([\w_]+), *([\w_]+)\)$").unwrap();
     }
     if let Some(lt) = LT.captures(key_str) {
-        if let Some(layer) = layer::parse(&lt[1]) {
+        if let Some(layer) = layer_names.pretty_name(&lt[1]) {
             return Some(Key::LayerTap {
                 layer: layer.to_string(),
                 key: lt[2].to_string(),
@@ -128,12 +126,12 @@ fn parse_modtap(key_str: &str) -> Option<Key> {
     None
 }
 
-fn parse_layer_change(key_str: &str) -> Option<Key> {
+fn parse_layer_change(key_str: &str, layer_names: &LayerNames) -> Option<Key> {
     lazy_static! {
         static ref LAYER_CHANGE: Regex = Regex::new(r"^(MO|PDF)\(([A-Z_]+)\)$").unwrap();
     }
     if let Some(lc) = LAYER_CHANGE.captures(key_str) {
-        if let Some(layer) = layer::parse(&lc[2]) {
+        if let Some(layer) = layer_names.pretty_name(&lc[2]) {
             return Some(Key::LayerChange {
                 _action: lc[1].to_string(),
                 layer: layer.to_string(),
@@ -161,7 +159,7 @@ fn parse_modkey(key_str: &str) -> Option<Key> {
     None
 }
 
-pub fn from_str(key_str: &str) -> Option<Key> {
+fn from_str(key_str: &str, layer_names: &LayerNames) -> Option<Key> {
     if key_str == "KC_TRNS" {
         return Some(Key::Trans);
     }
@@ -177,13 +175,13 @@ pub fn from_str(key_str: &str) -> Option<Key> {
     if let Some(key) = parse_unicode(key_str) {
         return Some(key);
     }
-    if let Some(key) = parse_layertap(key_str) {
+    if let Some(key) = parse_layertap(key_str, layer_names) {
         return Some(key);
     }
     if let Some(key) = parse_modtap(key_str) {
         return Some(key);
     }
-    if let Some(key) = parse_layer_change(key_str) {
+    if let Some(key) = parse_layer_change(key_str, layer_names) {
         return Some(key);
     }
     // Keep this last as this is prone to false positives
