@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
 use crate::keymap::layer::LayerNames;
 
 pub mod keymap;
@@ -15,16 +16,16 @@ pub struct CustomConfig {
 }
 
 pub struct Config {
-    src_json: String,
-    dest_yaml: String,
+    src_json: PathBuf,
+    dest_yaml: PathBuf,
     pub custom: CustomConfig,
 }
 
 impl Config {
-    pub fn new(src_json: &str, dest_yaml: &str, num_rows: usize) -> Config {
+    pub fn new(src_json: PathBuf, dest_yaml: PathBuf, num_rows: usize) -> Config {
         Config {
-            src_json: String::from(src_json),
-            dest_yaml: String::from(dest_yaml),
+            src_json,
+            dest_yaml,
             custom: CustomConfig {
                 num_rows,
                 aliases: HashMap::new(),

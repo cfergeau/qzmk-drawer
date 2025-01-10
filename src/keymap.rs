@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::prelude::*;
+use std::path::PathBuf;
 use crate::LayerNames;
 
 pub mod layer;
@@ -99,7 +100,7 @@ impl Keymap {
         //Err("unimplemented")
     }
 
-    pub fn to_file(&self, path: &str, layer_names: &LayerNames) -> Result<(), &'static str> {
+    pub fn to_file(&self, path: &PathBuf, layer_names: &LayerNames) -> Result<(), &'static str> {
         let mut file = match File::create(&path) {
             Err(_) => return Err("couldn't create file"),
             Ok(f) => f,

@@ -5,6 +5,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize)]
 struct RawKeymap {
@@ -50,7 +51,7 @@ impl RawKeymap {
     }
 }
 
-pub fn keymap_from_file(filename: &str, num_rows: usize, layer_names: &LayerNames) -> Result<Keymap, &'static str> {
+pub fn keymap_from_file(filename: &PathBuf, num_rows: usize, layer_names: &LayerNames) -> Result<Keymap, &'static str> {
     let data = match fs::read_to_string(filename) {
         Ok(data) => data,
         // most likely requires to specify a lifetime, which I haven't learnt yet
