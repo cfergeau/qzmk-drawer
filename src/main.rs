@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use qzmk_drawer::qmk::constants;
 
 use clap::{Args, Parser, Subcommand};
 
@@ -19,6 +20,7 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     Draw(DrawArgs),
+    ParseQmkKeycodes(ParseQmkKeycodesArgs),
 }
 
 #[derive(Args)]
@@ -30,6 +32,14 @@ struct DrawArgs {
         /// destination YAML file
         #[arg(short, long, value_name = "FILE")]
         output: Option<PathBuf>,
+}
+
+#[derive(Args)]
+struct ParseQmkKeycodesArgs {
+        /// source QMK JSON file
+        #[arg(short, long, value_name = "FILE")]
+        qmk_src_path: Option<PathBuf>,
+        keycodes_filename: Option<PathBuf>,
 }
 
 fn draw(args: DrawArgs) -> Result<(), &'static str> {
@@ -47,6 +57,51 @@ fn draw(args: DrawArgs) -> Result<(), &'static str> {
     qzmk_drawer::run(config)
 }
 
+fn qmk_keycodes_path(base_path: &PathBuf, keycode_type: &str, version: &str) -> PathBuf {
+    let keycodes_filename = format!("keycodes_{version}_{keycode_type}.hjson");
+
+    base_path.join("data").join("constants").join("keycodes").join(keycodes_filename)
+}
+
+fn parse_qmk_keycodes(args: ParseQmkKeycodesArgs) -> Result<(), &'static str> {
+    const QMK_SRC_PATH: &str = "/Users/teuf/perso/qzmk/qmk_firmware";
+    let qmk_src_path = args.qmk_src_path.unwrap_or(PathBuf::from(QMK_SRC_PATH));
+
+    const VERSION: &str = "0.0.1";
+    const TYPE: &str = "basic";
+
+    let qmk_src_path = match args.keycodes_filename {
+        Some(filename) => qmk_src_path.join("data").join("constants").join("keycodes").join(filename),
+        None => qmk_keycodes_path(&qmk_src_path, TYPE, VERSION),
+    };
+    println!("{}", qmk_src_path.display());
+    /*
+    match constants::parse(&qmk_src_path) {
+        Ok(_) => Ok(()),
+        Err(err) => Err(err),
+    }
+*/
+    /*
+    let qmk_src_path = PathBuf::from("/Users/teuf/dev/qzmk-drawer/data/keycodes_0.0.6_quantum.hjson");
+    println!("{}", qmk_src_path.display());
+*/
+    //constants::parse(&qmk_src_path).map(|_| ())
+    let files = constants::gen_file_list(&PathBuf::from(QMK_SRC_PATH), &[ "0.0.6", "0.0.5", "0.0.4", "0.0.3", "0.0.2", "0.0.1" ]);
+    for (key, value) in files.iter() {
+        println!("{key}");
+        for file in value {
+            println!("    {}", file.to_string_lossy())
+        }
+
+    }
+    constants::parse_categories(&files);
+    if let Ok(k) = constants::parse(&qmk_src_path) {
+        k.print();
+    }
+
+    Ok(())
+}
+
 fn main() -> Result<(), &'static str> {
 
     let cli = Cli::parse();
@@ -60,7 +115,8 @@ fn main() -> Result<(), &'static str> {
     match cli.command{
         Some(cmd) => match cmd {
             Commands::Draw(args) => draw(args),
-            _default => Err("unknown command"),
+            Commands::ParseQmkKeycodes(args) => parse_qmk_keycodes(args),
+            //_default => Err("unknown command"),
         }
         None => Err("missing command"),
     }
