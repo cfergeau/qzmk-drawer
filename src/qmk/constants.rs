@@ -57,6 +57,103 @@ impl KeycodesEnum {
             KeycodesEnum::Ranges(r) => println!("range, {} items", r.ranges.len()),
         }
     }
+
+    pub fn merge(&mut self, new: KeycodesEnum) {
+        match self {
+            KeycodesEnum::Keycodes(k) => {
+                if let KeycodesEnum::Keycodes(new_k) = new {
+                    k.merge(new_k)
+                } else {
+                    panic!("inconsistent state");
+                }
+            },
+            KeycodesEnum::Ranges(r) => {
+                if let KeycodesEnum::Ranges(new_r) = new {
+                    r.merge(new_r)
+                } else {
+                    panic!("inconsistent state");
+                }
+            },
+        }
+    }
+}
+
+impl Ranges {
+    pub fn merge(&mut self, new: Ranges) {
+        for (key, value) in new.ranges.into_iter() {
+            match value {
+                RangeEnum::Delete(s) => {
+                    assert_eq!(s, "!delete!");
+                    self.ranges.remove(&key);
+                },
+                RangeEnum::Detailed(d) => {
+                    match self.ranges.get_mut(&key) {
+                        // here, value is of type "KeycodeEnum", this can be delete, which we need to
+                        // handle here, or a Keycode, which we can call `merge` on
+                        Some(r) => r.merge(d),
+                        None => { self.ranges.insert(key, RangeEnum::Detailed(d)); },
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl Keycodes {
+    pub fn merge(&mut self, new: Keycodes) {
+        if new.keycodes.contains_key("!reset!") {
+            println!("jESET");
+        }
+        for (key, value) in new.keycodes.into_iter() {
+            match value {
+                KeycodeEnum::Delete(s) => {
+                    assert_eq!(s, "!delete!");
+                    self.keycodes.remove(&key);
+                },
+                KeycodeEnum::Reset(_) => (),
+                KeycodeEnum::Detailed(d) => {
+                    match self.keycodes.get_mut(&key) {
+                        // here, value is of type "KeycodeEnum", this can be delete/reset, which we need to
+                        // handle here, or a Keycode, which we can call `merge` on
+                        //
+                        // a Reset value should go with a "!reset!" key
+                        // a Delete value means we want to drop the key from self
+                        Some(k) => k.merge(d),
+                        None => { self.keycodes.insert(key, KeycodeEnum::Detailed(d)); },
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl RangeEnum {
+    pub fn merge(&mut self, new: Range) {
+        match self {
+            RangeEnum::Detailed(s) => s.merge(new),
+            RangeEnum::Delete(_) => panic!("destination range should not contain a Delete value"),
+        }
+    }
+}
+
+impl KeycodeEnum {
+    pub fn merge(&mut self, new: Keycode) {
+        match self {
+            KeycodeEnum::Detailed(s) => s.merge(new),
+            KeycodeEnum::Reset(_) => panic!("destination keycode should not contain a Reset value"),
+            KeycodeEnum::Delete(_) => panic!("destination keycode should not contain a Delete value"),
+        }
+    }
+}
+
+impl Range {
+    pub fn merge(&mut self, new: Range) {
+    }
+}
+
+impl Keycode {
+    pub fn merge(&mut self, new: Keycode) {
+    }
 }
 
 pub fn parse(file: &PathBuf) -> Result<KeycodesEnum, &'static str> {
