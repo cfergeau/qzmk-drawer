@@ -51,6 +51,13 @@ pub enum KeycodesEnum {
 }
 
 impl KeycodesEnum {
+    pub fn get_aliases(&self) -> Vec<&str> {
+        match self {
+            KeycodesEnum::Ranges{..} => Vec::new(),
+            KeycodesEnum::Keycodes(keycodes) => keycodes.get_aliases()
+        }
+    }
+
     pub fn print(&self) {
         match self {
             KeycodesEnum::Keycodes(k) => println!("keycodes, {} items", k.keycodes.len()),
@@ -100,6 +107,11 @@ impl Ranges {
 }
 
 impl Keycodes {
+    pub fn get_aliases(&self) -> Vec<&str> {
+        for keycode in self.keycodes.values() {
+        }
+    }
+
     pub fn merge(&mut self, new: Keycodes) {
         if new.keycodes.contains_key("!reset!") {
             println!("jESET");
@@ -148,11 +160,18 @@ impl KeycodeEnum {
 
 impl Range {
     pub fn merge(&mut self, new: Range) {
+        self.define = new.define;
     }
 }
 
 impl Keycode {
-    pub fn merge(&mut self, new: Keycode) {
+    pub fn merge(&mut self, mut new: Keycode) {
+        self.group = new.group;
+        self.key = new.key;
+        if new.label.is_some() {
+            self.label = new.label;
+        }
+        self.aliases.append(&mut new.aliases);
     }
 }
 
@@ -242,7 +261,10 @@ pub fn gen_file_list(base_path: &PathBuf, versions: &[&str]) -> HashMap<String, 
 pub fn parse_categories(categories: &HashMap<String, Vec<PathBuf>>) {
     for file_list in categories.values() {
         for file in file_list {
-            parse(file);
+            match parse(file) {
+                Ok(keycodes) => (),
+                Err(_) => continue,
+            }
         }
     }
 }
